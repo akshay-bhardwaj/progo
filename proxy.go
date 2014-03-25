@@ -9,7 +9,9 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"sync/atomic"
+	"sync/atomic"	
+	"strings"
+	"fmt"
 )
 
 // The basic proxy type. Implements http.Handler.
@@ -103,6 +105,7 @@ func (proxy *ProxyHttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 		var err error
 		ctx.Logf("Got request %v %v %v %v", r.URL.Path, r.Host, r.Method, r.URL.String())
+		
 		if !r.URL.IsAbs() {
 			if r.Host == "" {
 				ctx.Warnf("non-proxy request received, without Host header")
@@ -116,6 +119,18 @@ func (proxy *ProxyHttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 		}
+
+		shost := strings.Split(r.URL.Host, ":")
+		if len(shost) >= 2 && shost[1] == "9091" {
+			if r.Header.Get("x_red") == "1" {
+				ctx.Warnf("Protecting from infinte loop")
+				fmt.Fprintf(w,"Protecting browserstack from infinite loop")
+				return
+			} else {
+				r.Header.Add("x_red", "1")	
+			}
+		}
+
 		r, resp := proxy.filterRequest(r, ctx)
 
 		if resp == nil {

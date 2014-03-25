@@ -51,7 +51,6 @@ func (proxy *ProxyHttpServer) dial(network, addr string) (c net.Conn, err error)
 
 func (proxy *ProxyHttpServer) handleHttps(w http.ResponseWriter, r *http.Request) {
 	ctx := &ProxyCtx{Req: r, Session: atomic.AddInt64(&proxy.sess, 1), proxy: proxy}
-
 	hij, ok := w.(http.Hijacker)
 	if !ok {
 		panic("httpserver does not support hijacking")
@@ -63,7 +62,7 @@ func (proxy *ProxyHttpServer) handleHttps(w http.ResponseWriter, r *http.Request
 	}
 
 	ctx.Logf("Running %d CONNECT handlers", len(proxy.httpsHandlers))
-	todo, host := OkConnect, r.URL.Host
+	todo, host := MitmConnect, r.URL.Host
 	ctx.Req = r
 	for _, h := range proxy.httpsHandlers {
 		newtodo, newhost := h.HandleConnect(host, ctx)
@@ -125,7 +124,7 @@ func (proxy *ProxyHttpServer) handleHttps(w http.ResponseWriter, r *http.Request
 				return
 			}
 		}
-		ctx.Logf("Accepting CONNECT to %s", host)
+		ctx.Logf("AAAAccepting CONNECT to %s", host)
 		proxyClient.Write([]byte("HTTP/1.0 200 OK\r\n\r\n"))
 		go proxy.copyAndClose(targetSiteCon, proxyClient)
 		go proxy.copyAndClose(proxyClient, targetSiteCon)
